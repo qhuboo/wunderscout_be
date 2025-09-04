@@ -1,10 +1,15 @@
 import express from "express";
 import cors from "cors";
-import config from "./config.js";
+import config from "./lib/config.js";
 
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from "uuid";
+
+import { sendMessage } from "./lib/rabbit.js";
+
+import { initRedisSubscriber } from "./lib/kv.js";
+import { initWebSocket } from "./lib/ws.js";
 
 const app = express();
 
@@ -22,9 +27,9 @@ app.get("/", (req, res) => {
 app.post("/upload-url", async (req, res) => {
 	const { fileName, contentType } = req.body;
 	try {
-		const videoId = uuidv4();
+		const jobId = uuidv4();
 		const ext = fileName?.split(".").pop();
-		const key = ext ? `uploads/${videoId}.${ext}` : `uploads/${videoId}`;
+		const key = ext ? `uploads/${jobId}.${ext}` : `uploads/${jobId}`;
 		const command = new PutObjectCommand({
 			Bucket: config.aws.s3Bucket,
 			Key: key,
@@ -33,13 +38,32 @@ app.post("/upload-url", async (req, res) => {
 
 		const uploadURL = await getSignedUrl(s3, command, { expiresIn: 3600 });
 
-		return res.json({ url: uploadURL });
+		return res.json({ url: uploadURL, jobId, key });
 	} catch (error) {
 		console.log("Error generating url: ", error);
 		res.status(500).json({ error: "Failed to generate upload URL." });
 	}
 });
 
-const server = app.listen(config.port, () => {
-	console.log("Server running.");
+app.post("/jobs", (req, res) => {
+	const { jobId, key } = req.body;
+
+	try {
+		const ok = sendMessage("test_queue", JSON.stringify({ jobId, key }));
+
+		if (!ok) {
+			return res.status(500).json({ message: "Failed to enqueue job." });
+		}
+
+		return res.json({ message: "Job enqueued." });
+	} catch (error) {
+		console.log("Error: ", error);
+		res.status(500).json({ Error: "Failed to enqueue job." });
+	}
+});
+
+const server = app.listen(config.port, async () => {
+	console.log("BE: Server running.");
+	initWebSocket(server);
+	await initRedisSubscriber();
 });

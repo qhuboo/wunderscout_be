@@ -11,6 +11,11 @@ const envSchema = z.object({
 	AWS_SECRET_ACCESS_KEY: z.string(),
 	AWS_REGION: z.string(),
 	S3_BUCKET: z.string(),
+	REDIS_URL: z.string(),
+	RABBITMQ_PORT: z.string(),
+	RABBITMQ_PORT_MANAGEMENT: z.string(),
+	RABBITMQ_HOST: z.string(),
+	RABBITMQ_URL: z.string(),
 });
 
 const env = envSchema.parse(process.env);
@@ -23,6 +28,15 @@ const config = {
 		secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
 		region: env.AWS_REGION,
 		s3Bucket: env.S3_BUCKET,
+	},
+	redis: {
+		url: env.REDIS_URL,
+	},
+	rabbitMQ: {
+		port: env.RABBITMQ_PORT,
+		port_management: env.RABBITMQ_PORT_MANAGEMENT,
+		host: env.RABBITMQ_HOST,
+		url: env.RABBITMQ_URL,
 	},
 };
 
