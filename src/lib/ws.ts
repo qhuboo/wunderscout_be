@@ -4,46 +4,45 @@ import type { Server } from "node:http";
 const jobClients = new Map<string, WebSocket>();
 
 export function initWebSocket(server: Server) {
-	// Attach websocket server to the same HTTP server
-	const wss = new WebSocketServer({ server });
+  // Attach websocket server to the same HTTP server
+  const wss = new WebSocketServer({ server });
 
-	wss.on("connection", (ws) => {
-		console.log("BE: Client connected.");
+  wss.on("connection", (ws) => {
+    console.log("BE: Client connected.");
 
-		ws.send(JSON.stringify({ message: "Hello from the WebSocket!" }));
+    ws.send(JSON.stringify({ message: "Hello from the WebSocket!" }));
 
-		ws.on("message", (msg) => {
-			// Clients send message to subscribe to job.
-			try {
-				const data = JSON.parse(msg.toString());
-				console.log("BE: Client Subscribed: ", data);
+    ws.on("message", (msg) => {
+      // Clients send message to subscribe to job.
+      try {
+        const data = JSON.parse(msg.toString());
+        console.log("BE: Client Subscribed: ", data);
 
-				if (data.jobId) {
-					jobClients.set(data.jobId, ws);
-					console.log("BE: Client subscribed to job: ", data.jobId);
-					console.log("jobClients: ", jobClients);
-				}
-			} catch (error) {
-				console.log("Invalid WS message: ", msg);
-			}
-		});
+        if (data.jobId) {
+          jobClients.set(data.jobId, ws);
+          console.log("BE: Client subscribed to job: ", data.jobId);
+        }
+      } catch (error) {
+        console.log("Invalid WS message: ", msg);
+      }
+    });
 
-		ws.on("close", () => {
-			console.log("BE: Client disconnected.");
-			// Clean up any job subscriptions for this socket.
-			for (const [jobId, client] of jobClients.entries()) {
-				if (client === ws) {
-					jobClients.delete(jobId);
-				}
-			}
-		});
-	});
+    ws.on("close", () => {
+      console.log("BE: Client disconnected.");
+      // Clean up any job subscriptions for this socket.
+      for (const [jobId, client] of jobClients.entries()) {
+        if (client === ws) {
+          jobClients.delete(jobId);
+        }
+      }
+    });
+  });
 }
 
 export function sendUpdateToClient(jobId: string, update: any) {
-	console.log("BE: Sending update to client.");
-	const client = jobClients.get(jobId);
-	if (client && client.readyState === client.OPEN) {
-		client.send(JSON.stringify(update));
-	}
+  console.log("BE: Sending update to client.");
+  const client = jobClients.get(jobId);
+  if (client && client.readyState === client.OPEN) {
+    client.send(JSON.stringify(update));
+  }
 }

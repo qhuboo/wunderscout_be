@@ -16,6 +16,7 @@ const envSchema = z.object({
 	RABBITMQ_PORT_MANAGEMENT: z.string(),
 	RABBITMQ_HOST: z.string(),
 	RABBITMQ_URL: z.string(),
+  DATABASE_URL: z.string()
 });
 
 const env = envSchema.parse(process.env);
@@ -38,6 +39,9 @@ const config = {
 		host: env.RABBITMQ_HOST,
 		url: env.RABBITMQ_URL,
 	},
+  postgres: {
+    url: env.DATABASE_URL,
+  }
 };
 
 export default config;
