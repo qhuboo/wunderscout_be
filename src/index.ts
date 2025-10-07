@@ -51,7 +51,7 @@ app.post("/jobs", (req, res) => {
   const { jobId, key } = req.body;
 
   try {
-    const ok = sendMessage("test_queue", JSON.stringify({ jobId, key }));
+    const ok = sendMessage("worker_queue", JSON.stringify({ jobId, key }));
 
     if (!ok) {
       return res.status(500).json({ message: "Failed to enqueue job." });
@@ -65,9 +65,20 @@ app.post("/jobs", (req, res) => {
 });
 
 app.get("/db-health", async (req, res) => {
-  console.log("In the api");
-  const response = await pool.query("SELECT * FROM users;");
-  return res.json({ message: "Okay" })
+  console.log("Checking DB connection…");
+  try {
+    const result = await pool.query("SELECT 1;");
+    res.json({
+      status: "ok",
+      db: true,
+    });
+  } catch (err) {
+    console.error("DB health check failed:", err);
+    res.status(500).json({
+      status: "error",
+      db: false,
+    });
+  }
 });
 
 const server = app.listen(config.port, async () => {

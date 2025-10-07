@@ -19,7 +19,9 @@ export function initWebSocket(server: Server) {
         console.log("BE: Client Subscribed: ", data);
 
         if (data.jobId) {
+          console.log(`BE[initWebSocket][onMessage] We hace subscribed and added client to list.`)
           jobClients.set(data.jobId, ws);
+          console.log(`BE[initWebSocket][onMessage] jobClients: ${Array.from(jobClients.entries())}`)
           console.log("BE: Client subscribed to job: ", data.jobId);
         }
       } catch (error) {
@@ -40,9 +42,11 @@ export function initWebSocket(server: Server) {
 }
 
 export function sendUpdateToClient(jobId: string, update: any) {
-  console.log("BE: Sending update to client.");
+  console.log(`BE[sendUpdateToClient]: Sending update to client subscribed to jobId:${jobId}.`);
   const client = jobClients.get(jobId);
-  if (client && client.readyState === client.OPEN) {
+  console.log(`BE[sendUpdateToClient]: Client found: ${client}`)
+  if (client && client.readyState === WebSocket.OPEN) {
+    console.log(`BE[sendUpdateToClient] Client found!`)
     client.send(JSON.stringify(update));
   }
 }
